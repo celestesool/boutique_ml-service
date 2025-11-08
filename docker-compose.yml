@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: ml_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ml_boutique_db
+    networks:
+      - ml-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ML Service API
+  ml-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ml_service_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URL=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=ml_boutique_db
+      - API_KEY=ml_secret_key_boutique_2025
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - LOG_LEVEL=INFO
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      # Montar modelos y datos para desarrollo
+      - ./models:/app/models
+      - ./logs:/app/logs
+    networks:
+      - ml-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  ml-network:
+    driver: bridge
