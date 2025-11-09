@@ -5,6 +5,7 @@ Script to train initial classification model
 import tensorflow as tf
 from tensorflow.keras import layers, models
 from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.applications.efficientnet import preprocess_input
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import os
 
@@ -14,10 +15,11 @@ BATCH_SIZE = 32
 EPOCHS = 10
 NUM_CLASSES = 10
 
-# Paths
-TRAIN_DIR = "../data/train"
-VAL_DIR = "../data/validation"
-MODEL_SAVE_PATH = "../models/classifier_v1.h5"
+# Paths (rutas absolutas para ejecutar desde ml-service/)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TRAIN_DIR = os.path.join(BASE_DIR, "data", "train")
+VAL_DIR = os.path.join(BASE_DIR, "data", "validation")
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, "models", "fashion_classifier.h5")
 
 
 def create_model():
@@ -61,9 +63,9 @@ def train_model():
         metrics=['accuracy']
     )
     
-    # Data augmentation
+    # Data augmentation con preprocessing correcto para EfficientNet
     train_datagen = ImageDataGenerator(
-        rescale=1./255,
+        preprocessing_function=preprocess_input,  # Normalización de ImageNet
         rotation_range=20,
         width_shift_range=0.2,
         height_shift_range=0.2,
@@ -71,7 +73,7 @@ def train_model():
         fill_mode='nearest'
     )
     
-    val_datagen = ImageDataGenerator(rescale=1./255)
+    val_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
     
     # Load data
     print("\n📂 Loading training data...")
