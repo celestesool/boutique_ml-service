@@ -3,6 +3,7 @@ Configuration settings for ML Service
 """
 
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from typing import List
 import os
 from pathlib import Path
@@ -18,6 +19,8 @@ class Settings(BaseSettings):
     
     # API Security
     ML_API_KEY: str = "ml_secret_key_boutique_2025"
+    # Backwards-compatible environment variable name (some setups use API_KEY)
+    API_KEY: str | None = Field(None, env="API_KEY")
     SHARED_SECRET_NESTJS: str = "tu_secreto_super_secreto_aqui_2024"
     
     # MongoDB

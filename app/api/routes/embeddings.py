@@ -26,7 +26,7 @@ router = APIRouter()
 
 async def verify_api_key(x_api_key: str = Header(...)):
     """Verifica la API key en el header."""
-    if x_api_key != settings.API_KEY:
+    if x_api_key != settings.ML_API_KEY:
         raise HTTPException(status_code=403, detail="API Key inválida")
     return x_api_key
 
@@ -56,7 +56,7 @@ async def extract_embedding(
         
         # Guardar en MongoDB si se proporcionó image_id
         if image_id:
-            db = await get_database()
+            db = get_database()
             await db.embeddings.update_one(
                 {"image_id": image_id},
                 {
@@ -190,7 +190,7 @@ async def find_similar_images(
         for image_id, similarity in faiss_results:
             if similarity >= request.threshold:
                 # Obtener metadata de MongoDB si existe
-                db = await get_database()
+                db = get_database()
                 doc = await db.embeddings.find_one({"image_id": image_id})
                 product_id = doc.get("product_id") if doc else None
                 
@@ -224,8 +224,8 @@ async def get_embedding_stats(api_key: str = Depends(verify_api_key)):
     Retorna información sobre cuántos embeddings hay en BD y en el índice FAISS.
     """
     try:
-        db = await get_database()
-        
+        db = get_database()
+
         total_embeddings = await db.embeddings.count_documents({})
         
         # Obtener ejemplo de embedding
@@ -261,7 +261,7 @@ async def build_faiss_index(api_key: str = Depends(verify_api_key)):
     try:
         logger.info("Construyendo índice FAISS desde MongoDB...")
         
-        db = await get_database()
+        db = get_database()
         
         # Obtener todos los embeddings de MongoDB
         cursor = db.embeddings.find({}, {"image_id": 1, "embedding": 1, "filename": 1})
